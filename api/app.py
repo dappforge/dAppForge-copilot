@@ -1,27 +1,41 @@
 import os
 import sys
-import s3fs
+import json
 import bcrypt
-import asyncio
-import logging
-from fastapi import status
-from fastapi.responses import StreamingResponse
-from concurrent.futures import ProcessPoolExecutor
-from fastapi.middleware.cors import CORSMiddleware
+import yaml
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-
-
-# MODULE IMPORTS
-from common.config import start_wandb_run
-from common.models import CodeRequest, CodeResponse
-from common.inference import claude_inference,claude_inference_streaming
-from api.utils import check_and_trim_code_length, prepare_response, load_users_from_yaml
-from caching.redis_cache import generate_cache_key, get_cached_result, set_cache_result
+from fastapi import status
+import logging
+from llama_index.core import StorageContext, KnowledgeGraphIndex, Settings
+from llama_index.readers.web import WholeSiteReader
+from llama_index.core.graph_stores import SimpleGraphStore
+from llama_index.core import StorageContext, SummaryIndex
+import s3fs
+from llama_index.readers.web import WholeSiteReader
+from llama_index.core import SummaryIndex
+from llama_index.core.indices.composability import ComposableGraph
+from llama_index.core import StorageContext, load_index_from_storage
+import nest_asyncio
+import re
+import json
+import httpx
+from fastapi.responses import StreamingResponse
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from api.utils import check_and_trim_code_length, prepare_response, clean_and_escape_code_logic2, extract_value_from_generated_code, clean_generated_code, load_kg_index_from_disk, process_generated_code, detect_source, load_users_from_yaml
+from common.config import start_wandb_run
+from common.models import CodeRequest, CodeResponse, KGCreationRequest, MergeKGRequest
+from common.inference import claude_inference, composable_graph_inference, load_kg_index, plot_full_kg, claude_inference_streaming
+from common.utils import extract_code_from_response, extract_code_using_regex
+from caching.redis_cache import generate_cache_key, get_cached_result, set_cache_result, invalidate_cache
+from code_generation.kg_construction.load_and_persist_kg import load_and_persist_kg
+from code_generation.kg_construction.website_documents_creation import scrape_website
 
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
 PERSIST_DIR = '/home/ubuntu/dApp/knowledge_graph_data/'
 
 app = FastAPI()
@@ -82,74 +96,23 @@ async def generate_code(request: CodeRequest, username: str = Depends(authentica
 
     Returns:
         StreamingResponse: A streaming response that outputs the generated code in real-time, with a media type of "text/event-stream".
-        
-    Examples:
-        Request:
-        ```
-        {
-            "prefix_code": "///The two components of a block are the header and the extrinsic. \\n pub struct Block<Header, Extrinsic> {"
-        }
-        ```
-
-        Response:
-        ```
-        {
-            "generated_code": "{ pub extrinsics: Vec<Extrinsic>}",
-            "kg_context": [
-                "('Parachain-template-1001.rs', 'Written in', 'Rust programming language')",
-                "('Ink!', 'Enable', 'Write webassembly-based smart contracts using rust')",
-                "['Substrate', 'Allows building', 'Application-specific blockchains']",
-                "('Ink!', 'Is', 'Rust smart contract language for substrate chains')",
-                "['Rust', 'Required for', 'Compiling node']",
-                "['Rust', 'Logging api', 'Debug macros']"
-            ],
-            "subgraph_plot": "<iframe>< /iframe>"
-        }
-        ```
     """
     return StreamingResponse(
-        claude_inference_streaming(request.prefix_code),
+        claude_inference_streaming(request.prefix_code, request.kg_name),
         media_type="text/event-stream")
 
 
 @app.post("/v1/generate_code", response_model=CodeResponse)
 async def generate_code(request: CodeRequest, username: str = Depends(authenticate)):
     """
-    Generate code based on the provided prefix code. This endpoint receives a prefix code and returns the generated code completion,
-    knowledge graph edges, and optionally a subgraph plot.
+    Generates code based on a defined prefix and returns the generated code along with knowledge graph edges and a subgraph plot.
 
-        Args:
-            request (CodeRequest): A request containing the prefix code and a subgraph plot.
+    Args:
+        request (CodeRequest): Request containing the prefix code for code generation.
+        username (str): Authenticated username, provided by the dependency injection.
 
-        Returns:
-            CodeResponse: A response containing the generated code, knowledge graph edges, and subgraph plot.
-
-        Raises:
-            HTTPException: If an error occurs during code generation.
-
-        Examples:
-            Request:
-            ```
-            {
-                "prefix_code": "///The two components of a block are the header and the extrinsic. \\n pub struct Block<Header, Extrinsic> {"
-            }
-            ```
-
-            Response:
-            ```
-            {
-                "generated_code": "{ pub extrinsics: Vec<Extrinsic>}",
-                "kg_context": [
-                    "('Parachain-template-1001.rs', 'Written in', 'Rust programming language')",
-                    "('Ink!', 'Enable', 'Write webassembly-based smart contracts using rust')",
-                    "['Substrate', 'Allows building', 'Application-specific blockchains']",
-                    "('Ink!', 'Is', 'Rust smart contract language for substrate chains')",
-                    "['Rust', 'Required for', 'Compiling node']",
-                    "['Rust', 'Logging api', 'Debug macros']"
-                ],
-                "subgraph_plot": "<iframe>< /iframe>"
-            }
-            ```
+    Returns:
+        CodeResponse: A response model containing the generated code, knowledge graph edges, and a subgraph plot.
     """
     prefix_code = check_and_trim_code_length(request.prefix_code)
                
@@ -159,12 +122,15 @@ async def generate_code(request: CodeRequest, username: str = Depends(authentica
     if cached_result:
         return CodeResponse(**cached_result)
 
-    generated_code, sub_edges, subplot = claude_inference(prefix_code)    
+    generated_code, sub_edges, subplot = claude_inference(prefix_code,request.kg_name)    
     response = prepare_response(generated_code, sub_edges, subplot)
     
     await async_set_cache_result(cache_key, response.dict())
     
     return response
+
+
+
 
 @app.get("/")
 async def root():
@@ -178,4 +144,4 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8081, loop="asyncio", workers = 4)
+    uvicorn.run(app, host="0.0.0.0", port=8081, loop="asyncio", workers = 4,  timeout_keep_alive=180)

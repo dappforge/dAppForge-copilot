@@ -22,7 +22,8 @@ config = load_config()
 
 BUCKET_NAME = config['BUCKET_NAME']
 FOLDER_NAME = config['FOLDER_NAME']
-S3_PATH = config['S3_PATH']
+S3_PATH_INK = config['S3_PATH_INK']
+S3_PATH_SUBSTRATE = config['S3_PATH_SUBSTRATE']
 PERSIST_DISK_PATH = config['PERSIST_DISK_PATH']
 
 # Constants
@@ -95,17 +96,13 @@ def load_kg_index_from_disk():
 
 
 # Uncomment this if you want to Load the knowledge graph index
-#kg_index = load_kg_index(S3_PATH, fs)
+kg_index_substrate = load_kg_index(S3_PATH_SUBSTRATE, fs)
 
-kg_index = load_kg_index_from_disk()
+kg_index_ink = load_kg_index(S3_PATH_INK, fs)
 
-
-# Create the query engine
-query_engine = create_query_engine(kg_index)
+#kg_index = load_kg_index_from_disk()
 
 # Create a query engine that enables streaming
-streaming_query_engine = create_streaming_query_engine(kg_index)
-
 
 def composable_graph_inference(composable_graph,prefix_code):
     """"Perform inference based on multiple knowledge graphs"""
@@ -127,12 +124,18 @@ def composable_graph_inference(composable_graph,prefix_code):
 
     return response.response, sub_edges, subplot
 
-def claude_inference(prefix_code, suffix="}"):
+def claude_inference(prefix_code, kg_name ,suffix="}"):
     """Perform inference using Claude and return the generated code, edges, and subplot."""
     logger.info("Performing inference using Claude...")
     
     # data = {'prefix_code': prefix_code}
     query = template.render({'prefix_code': prefix_code})
+
+    # Create the query engine
+    if kg_name == "substrate":
+        query_engine = create_query_engine(kg_index_substrate)
+    elif kg_name == "ink":
+        query_engine = create_query_engine(kg_index_ink)
 
     response = query_engine.query(query)
 
@@ -153,8 +156,11 @@ def claude_inference_gradio(prefix_code, suffix="}"):
     """Perform inference using Claude and return the generated code, edges, and subplot."""
     logger.info("Performing inference using Claude...")
     
+    # data = {'prefix_code': prefix_code}
     query = template.render({'prefix_code': prefix_code})
+        # Create the query engine
 
+    query_engine = create_query_engine(kg_index_ink)
     response = query_engine.query(query)
 
     # Uncomment the line below if you want to return the subgraph
@@ -169,9 +175,15 @@ def claude_inference_gradio(prefix_code, suffix="}"):
 
     return response.response, sub_edges, subplot
 
-async def claude_inference_streaming(prefix_code, suffix="}"):
+async def claude_inference_streaming(prefix_code,kg_name, suffix="}"):
     logger.info("Performing inference using Claude with streaming response...")
     query = template.render({'prefix_code': prefix_code})
+    # Create the query engine
+    if kg_name == "substrate":
+        streaming_query_engine = create_streaming_query_engine(kg_index_substrate)
+    elif kg_name == "ink":
+        streaming_query_engine = create_streaming_query_engine(kg_index_ink)
+        
     streaming_response = streaming_query_engine.query(query)
     for token in streaming_response.response_gen:
         print(token)
@@ -180,7 +192,7 @@ async def claude_inference_streaming(prefix_code, suffix="}"):
 def plot_full_kg():
     """Plot the full knowledge graph and return the HTML representation."""
     logger.info("Plotting the full knowledge graph...")
-    g = kg_index.get_networkx_graph()
+    g = kg_index_ink.get_networkx_graph()
     net = Network(
         notebook=False,
         cdn_resources="remote",

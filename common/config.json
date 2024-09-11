@@ -1,7 +1,8 @@
 {
   "BUCKET_NAME": "knowledge-graph-data",
-  "FOLDER_NAME": "kg_gh_subset/kg_data",
-  "S3_PATH": "s3://knowledge-graph-data/kg_gh_subset/kg_data",
+  "FOLDER_NAME": "use_ink_kg/kg_data",
+  "S3_PATH_INK": "s3://knowledge-graph-data/use_ink_kg/kg_data",
+  "S3_PATH_SUBSTRATE": "s3://knowledge-graph-data/kg",
   "PERSIST_DISK_PATH": "/home/ubuntu/dApp/knowledge_graph_data/kg",
   "AWS_REGION": "us-east-1",
   "LLM_MODEL": "anthropic.claude-3-sonnet-20240229-v1:0",
