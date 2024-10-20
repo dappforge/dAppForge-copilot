@@ -7,6 +7,12 @@ class AnswerFormat(BaseModel):
 
 class CodeRequest(BaseModel):
     prefix_code: str
+    kg_name: str
+
+class ChatRequest(BaseModel):
+    query: str
+    kg_name: str
+    session_id: str
 
 class CodeResponse(BaseModel):
     generated_code: str

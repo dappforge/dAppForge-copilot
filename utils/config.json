@@ -1,0 +1,13 @@
+{
+    "BUCKET_NAME": "",
+    "FOLDER_NAME": "",
+    "S3_PATH_INK": "",
+    "S3_PATH_SUBSTRATE": "",
+    "PERSIST_DISK_PATH": "",
+    "AWS_REGION": "",
+    "LLM_MODEL": "",
+    "EMBED_MODEL": "",
+    "WANDB_PROJECT": "",
+    "WANDB_ENTITY": ""
+  }
+  

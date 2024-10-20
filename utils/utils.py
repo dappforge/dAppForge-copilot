@@ -18,22 +18,35 @@ def load_config():
     return config
 
 def extract_code_using_regex(text):
-    pattern = re.compile(r'["]?[completed_code]+["]?:\n(.*?)\n```', re.DOTALL)
+    pattern = re.compile(r'"fill_in_middle":\s*"(.*?)"\s*}', re.DOTALL)
     match = pattern.search(text)
     if match:
-        return match.group(1)
+        # Clean up the code and handle escaped characters
+        code = match.group(1)
+        # Replace escaped newlines with actual newlines
+        code = code.replace('\\n', '\n').replace('\\"', '"')
+        return code.strip()
     return None
+
 
 def extract_code_from_response(json_response):
     try:
+        # Load the JSON response
         response_dict = json.loads(json_response)
         if "fill_in_middle" in response_dict:
-            return response_dict["fill_in_middle"]
+            # Extract and clean the code
+            code = response_dict["fill_in_middle"]
+            code = code.replace('\\n', '\n').replace('\\"', '"').strip()
+            # Replace multiple consecutive newlines with one
+            cleaned_code = re.sub(r'\n\s*\n', '\n', code)
+            return cleaned_code
         else:
             return None
     except json.JSONDecodeError as e:
         print("Failed to parse the response as JSON:", e)
         return None
+
+
 
 
 def plot_subgraph_via_edges(input_data):

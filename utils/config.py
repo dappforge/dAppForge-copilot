@@ -30,6 +30,7 @@ config = load_config()
 AWS_REGION = config['AWS_REGION']
 LLM_MODEL = config['LLM_MODEL']
 EMBED_MODEL = config['EMBED_MODEL']
+print("Loaded Embed model:" + str(EMBED_MODEL))
 WANDB_PROJECT = config['WANDB_PROJECT']
 WANDB_ENTITY = config['WANDB_ENTITY']
 
@@ -53,18 +54,25 @@ def wandb_login():
     logger.info("Wandb logged in successfully.")
 
 
+
 def configure_settings():
     """Configure the settings for LLM and embedding models."""
     Settings.llm = Bedrock(
         model=LLM_MODEL,
         region_name=AWS_REGION,
         context_size=200000,
+        max_tokens=4096
     )
     Settings.embed_model = BedrockEmbedding(
-        model=EMBED_MODEL,
-        region_name=AWS_REGION
+        model_name="cohere.embed-multilingual-v3",  
+        region_name=AWS_REGION,  
+        client_kwargs={
+            "model_id": "cohere.embed-multilingual-v3"  # Explicitly set the model_id
+        }
     )
     logger.info("Settings configured successfully.")
+    print("Embedding model set to:" + str(Settings.embed_model))
+    
     return Settings
 
 

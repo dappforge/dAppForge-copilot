@@ -21,22 +21,21 @@ import nest_asyncio
 import re
 import json
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
 
-from common.config import start_wandb_run
-from common.models import CodeRequest, CodeResponse, KGCreationRequest, MergeKGRequest
-from common.inference import claude_inference, composable_graph_inference, load_kg_index, plot_full_kg, claude_inference_streaming
-from common.utils import extract_code_from_response, extract_code_using_regex
+from utils.config import start_wandb_run
+from utils.models import CodeRequest, CodeResponse, KGCreationRequest, MergeKGRequest
+from utils.utils import extract_code_from_response, extract_code_using_regex
 from caching.redis_cache import generate_cache_key, get_cached_result, set_cache_result, invalidate_cache
-from code_generation.kg_construction.load_and_persist_kg import load_and_persist_kg
+from knowledge_graph_core.kg_construction.kg_utils import load_and_persist_kg
+
+from knowledge_graph_core.kg_rag.inference import claude_inference, composable_graph_inference, claude_inference_streaming
+from knowledge_graph_core.kg_rag.kg_operations import load_kg_index
+from knowledge_graph_core.kg_construction.visualization import plot_full_kg
 
 
 def load_users_from_yaml(file_path):
-    """
-    Loads user data from a YAML file, hashes the passwords, and creates a dictionary mapping usernames to hashed passwords.
-    :param file_path: The path to the YAML file containing user data.
-    :return: A dictionary where usernames are keys and hashed passwords are values.
-    """
     with open(file_path, 'r') as file:
         data = yaml.safe_load(file)
         users = {}
@@ -54,18 +53,6 @@ def detect_source(url: str):
 
 
 def process_generated_code(generated_code: str, sub_edges: list, subplot: str) -> CodeResponse:
-    """
-    Process the generated code and extract the relevant information.
-
-    Args:
-        generated_code (str): The generated code to be processed.
-        sub_edges (list): The list of sub-edges.
-        subplot (str): The subplot.
-
-    Returns:
-        CodeResponse: The processed code response.
-
-    """
     
     generated_code = Response(generated_code)
     print("Generated code")
@@ -134,15 +121,6 @@ def clean_and_escape_code_logic2(generated_code: str) -> str:
     return cleaned_code_without_fill_in_middle
 
 def prepare_response(generated_code: str, sub_edges: list, subplot: str) -> CodeResponse:
-    """
-    A function that prepares a response based on the generated code, sub edges, and subplot. 
-    It tries to extract the value from the generated code and creates a result dictionary 
-    based on the extracted value, sub edges, and subplot. If the value is not found, it loads 
-    the generated code as JSON, gets the 'fill_in_middle', and creates the result dictionary. 
-    If a JSONDecodeError occurs, it cleans and escapes the generated code logic, and returns 
-    the cleaned code without 'fill_in_middle'. In case of any other exceptions, it raises an 
-    HTTPException with status code 500 and the exception detail.
-    """
     try:
         value = extract_value_from_generated_code(generated_code)
         if value:
@@ -174,10 +152,10 @@ def prepare_response(generated_code: str, sub_edges: list, subplot: str) -> Code
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def check_and_trim_code_length(prefix_code: str, max_length: int = 340) -> str:
+def check_and_trim_code_length(prefix_code: str, max_length: int = 250) -> str:
     # Adjust max_length if the length of prefix_code is greater than 200 characters
-    if len(prefix_code) > 200:
-        max_length = 230
+    if len(prefix_code) > 160:
+        max_length = 100
     
     if len(prefix_code) > max_length:
         return prefix_code[-max_length:]

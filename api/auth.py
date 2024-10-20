@@ -8,7 +8,7 @@ security = HTTPBasic()
 def load_users_from_yaml(file_path):
     with open(file_path, 'r') as file:
         data = yaml.safe_load(file)
-        users = {user['username']: user['password'] for user in data['users']}
+        users = {user['username']: user['password'].encode('utf-8') for user in data['users']}
         return users
 
 # Load users from YAML file
