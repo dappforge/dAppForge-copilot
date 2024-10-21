@@ -8,6 +8,9 @@ This repository demonstrates the use of a code generation capabilities for block
 
 ## Agent Chatbot Flow
 
+![Chatbot Flow](https://github.com/neurons-lab/dAppForge-copilot/blob/main/assets/chatbot_agent.png)
+
+
 We have also added a new chatbot implementation that handles user queries through two routes:
 
 1. **Code Generation Route:** If the user's query is related to code generation, the chatbot loads the relevant Knowledge Graphs to provide an answer based on code generation.
