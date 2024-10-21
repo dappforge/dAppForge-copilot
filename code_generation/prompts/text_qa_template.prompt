@@ -1,6 +1,0 @@
-Context information is below.
-\n---------------------\n{context_str}\n---------------------\n
-Using both the context information and also using your own knowledge, answer
-the question: {query_str}
-\nIf the context isn't helpful, you can also
-answer the question on your own.\n

@@ -8,7 +8,7 @@ This repository demonstrates the use of a code generation capabilities for block
 
 ## Agent Chatbot Flow
 
-![Chatbot Flow](https://github.com/neurons-lab/dAppForge-copilot/blob/main/assets/chatbot_agent.png)
+![Chatbot Flow](https://raw.githubusercontent.com/dappforge/dAppForge-copilot/main/assets/chatbot_agent.png)
 
 
 We have also added a new chatbot implementation that handles user queries through two routes:
@@ -135,27 +135,51 @@ python test_inference.py
 
 ## Directory Descriptions
 ```
-├── api : Contains the FastAPI endpoint. Start it using the command mentioned in the Usage section. 
-├── common
-│   ├── config.py : Configurations for setting up the LLM settings and Weights & Biases (wandb)
-│   ├── inference.py : Loads the Knowledge Graph from an S3 bucket and contains the inference function for the LLM for code generation.
-│   ├── models.py : Pydantic models for AnswerFormat and API code responses.
-│   ├── utils.py : Helper functions for the Knowledge Graph.
-│   └── config.json : Config file containing static variables of AWS S3 information, LLM models, and Wandb infos.
-├── code_generation : Creating the Knowledge Graph from GitHub repositories and websites.
-│   ├── kg_construction 
-│   │   ├── create_kg_from_github.py
-│   │   ├── create_kg_from_docs.py
-│   │   └── load_kg_from_s3.py
-│   ├── prompts : Prompt used for code generation
-│   │   ├── code_completion.prompt
-│   │   ├── kg_triplets_template.prompt
-│   │   └── text_qa_template.prompt
-│   └── caching : Contains all the necessary scripts for implementing the Redis caching mechanism.
-│       └── redis_caching.py
-├── services : Directory for managing different services that run on the EC2 instance.
-│   └── service_manager.py
-├── .env.example :Example of the `.env` file that needs to be set up.
-├── .gitignore :Specifies files and directories to be ignored by git.
-└── requirements.txt : List of Python dependencies required for the project.
+├── api : Contains the FastAPI endpoint files.
+│   ├── __init__.py
+│   ├── app.py
+│   ├── auth.py
+│   ├── hash_passwords.py
+│   ├── README.md
+│   ├── users.yaml
+│   └── utils.py
+├── assets : Contains image assets.
+│   └── chatbot_agent.png
+├── caching : Contains caching-related files.
+│   ├── __init__.py
+│   └── redis_cache.py
+├── knowledge_graph_core : Core knowledge graph functionality.
+│   ├── data_ingestion
+│   │   ├── github_connector.py
+│   │   └── website_connector.py
+│   ├── kg_construction
+│   │   ├── kg_creation.py
+│   │   ├── kg_utils.py
+│   │   └── visualization.py
+│   ├── kg_rag
+│   │   ├── inference.py
+│   │   ├── kg_config.py
+│   │   └── kg_operations.py
+│   └── prompts
+│       ├── chat_conversation.py
+│       ├── code_completion.py
+│       ├── kg_triplets.py
+│       ├── text_qa_template.py
+│       └── __init__.py
+├── services : Contains service-related files.
+│   ├── fastapi_app.service
+│   ├── gradio_app.service
+│   ├── README.md
+│   └── streamlit.service
+├── utils : Utility files and configurations.
+│   ├── __init__.py
+│   ├── config.json
+│   ├── config.py
+│   ├── load_and_persist_kg.py
+│   ├── models.py
+│   └── utils.py
+├── .env.example : Example environment file.
+├── LICENSE : License file.
+├── README.md : Main README file.
+└── requirements.txt : List of Python dependencies.
 ```
