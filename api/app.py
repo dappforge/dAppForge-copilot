@@ -47,7 +47,7 @@ security = HTTPBasic()
 # Load users from YAML file
 users = load_users_from_yaml('users.yaml')
 
-PERSIST_DIR = '/home/ubuntu/dApp/knowledge_graph_data/'
+PERSIST_DIR = '' #the path to local disk directory
 
 
 def authenticate(credentials: HTTPBasicCredentials = Depends(security)):

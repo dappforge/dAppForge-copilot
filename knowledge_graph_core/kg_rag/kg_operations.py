@@ -59,8 +59,9 @@ def load_kg_index_from_disk():
 def load_kg_index_from_neptune():
     nest_asyncio.apply()
     # Neptune Database connection 
+    neptune_host = '' # url host of NeptuneDB 
     graph_store = NeptuneDatabasePropertyGraphStore(
-        host='db-neptune-1-instance-1.ctoseyq84zjc.us-east-1.neptune.amazonaws.com'
+        host=neptune_host
     )
 
     # Creating the storage context
@@ -76,7 +77,8 @@ def load_kg_index_from_neptune():
 
 def create_vector_embeddings():
     try:
-        documents = SimpleDirectoryReader(input_files=["/home/ubuntu/dApp-merx/dApp-codegen/vector_data/dapp_content.txt"]).load_data()
+        documents_path = [""] #paths to the documents for vector store data
+        documents = SimpleDirectoryReader(input_files=documents_path).load_data()
         logger.info("Loaded how-to document...")
         
         splitter = SentenceSplitter(chunk_size=1024)
