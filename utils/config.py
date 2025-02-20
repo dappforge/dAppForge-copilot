@@ -70,8 +70,18 @@ def configure_settings():
             "model_id": "cohere.embed-multilingual-v3"  # Explicitly set the model_id
         }
     )
+
+    bedrock_llm = Bedrock(
+        model=LLM_MODEL,
+        region_name=AWS_REGION,
+        context_size=200000,
+        max_tokens=4096
+    )
+
     logger.info("Settings configured successfully.")
     print("Embedding model set to:" + str(Settings.embed_model))
+    
+    Settings.llm = bedrock_llm
     
     return Settings
 

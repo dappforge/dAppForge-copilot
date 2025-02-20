@@ -25,10 +25,13 @@ from knowledge_graph_core.kg_rag.inference import claude_inference, claude_infer
 from knowledge_graph_core.kg_rag.kg_operations import load_kg_index
 from caching.redis_cache import generate_cache_key, get_cached_result, set_cache_result
 from caching.redis_cache import async_generate_cache_key, async_get_cached_result, async_set_cache_result
+from feedback import FeedbackRequest, FeedbackResponse
+from feedback.handler import FeedbackHandler
 
 from llama_index.core.graph_stores import SimpleGraphStore
 from llama_index.core import StorageContext, SummaryIndex
 from llama_index.core.indices.composability import ComposableGraph
+
 
 app = FastAPI()
 start_wandb_run()
@@ -43,6 +46,10 @@ app.add_middleware(
 )
 
 security = HTTPBasic()
+
+
+feedback_handler = FeedbackHandler()
+
 
 # Load users from YAML file
 users = load_users_from_yaml('users.yaml')
@@ -252,6 +259,29 @@ async def generate_code(request: ChatRequest, username: str = Depends(authentica
         claude_chat_streaming(request.query, request.kg_name, request.session_id),
         media_type="text/event-stream"
     )
+
+
+@app.post("/v1/feedback/{user_id}/{session_id}", response_model=FeedbackResponse)
+async def submit_feedback(
+    user_id: str,
+    session_id: str,
+    request: FeedbackRequest,
+    username: str = Depends(authenticate)
+):
+    """
+    Submit user feedback for a session. Feedback is saved asynchronously and rules
+    are processed in the background.
+    """
+    try:
+        feedback_data = request.dict()
+        feedback_data["user_id"] = user_id
+        feedback_data["session_id"] = session_id
+        
+        result = await feedback_handler.save_feedback(feedback_data)
+        return FeedbackResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/")
 async def root():

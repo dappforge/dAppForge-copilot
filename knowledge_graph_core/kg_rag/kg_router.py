@@ -8,7 +8,7 @@ from typing import AsyncGenerator
 import asyncio
 
 class LLMQueryRouter:
-    def __init__(self, kg_index_substrate, kg_index_ink, vector_index):
+    def __init__(self, kg_index_substrate, kg_index_ink, kg_index_solidity, kg_index_rust, vector_index):
         # Initialize Claude 3.5 for code explanations
         self.code_explanation_llm = Anthropic(
             model="claude-3-5-sonnet-20241022-v2:0",
@@ -18,6 +18,8 @@ class LLMQueryRouter:
         # Store indices
         self.kg_index_substrate = kg_index_substrate
         self.kg_index_ink = kg_index_ink
+        self.kg_index_solidity = kg_index_solidity
+        self.kg_index_rust = kg_index_rust
         self.vector_index = vector_index
     
     def get_router(self, kg_name: str):
@@ -28,6 +30,12 @@ class LLMQueryRouter:
         elif kg_name == "ink":
             kg_retriever = self.kg_index_ink.as_retriever(similarity_top_k=5)
             kg_description = "Use this for generating Ink smart contracts, handling contract operations, and technical implementation. Best for code generation and smart contract tasks."
+        elif kg_name == "solidity":
+            kg_retriever = self.kg_index_solidity.as_retriever(similarity_top_k=5)
+            kg_description = "Use this for generating Solidity smart contracts, handling contract operations, and technical implementation. Best for code generation and smart contract tasks."
+        elif kg_name == "rust":
+            kg_retriever = self.kg_index_rust.as_retriever(similarity_top_k=5)
+            kg_description = "Use this for generating Rust smart contracts, handling contract operations, and technical implementation. Best for code generation and smart contract tasks."
         else:
             raise ValueError(f"Unknown kg_name: {kg_name}")
 
@@ -90,6 +98,8 @@ async def router_chat_streaming(
     router = LLMQueryRouter(
         kg_index_substrate=indices['substrate'],
         kg_index_ink=indices['ink'],
+        kg_index_solidity=indices['solidity'],
+        kg_index_rust=indices['rust'],
         vector_index=indices['vector']
     )
     

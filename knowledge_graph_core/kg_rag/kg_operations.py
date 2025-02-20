@@ -3,7 +3,7 @@ from llama_index.core import PromptTemplate
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core import VectorStoreIndex
-from .kg_config import fs, logger, S3_PATH_INK, S3_PATH_SUBSTRATE, PERSIST_DISK_PATH, text_qa_template_str
+from .kg_config import fs, logger, S3_PATH_INK, S3_PATH_SUBSTRATE,S3_PATH_SOLIDITY,S3_PATH_RUST, PERSIST_DISK_PATH, text_qa_template_str
 from llama_index.core.tools import RetrieverTool
 from botocore.exceptions import ClientError
 from llama_index.core import ServiceContext
@@ -102,6 +102,9 @@ def create_vector_embeddings():
 kg_index_substrate = load_kg_index(S3_PATH_SUBSTRATE, fs)
 kg_index_ink = load_kg_index(S3_PATH_INK, fs)
 kg_index_neptune = load_kg_index_from_neptune()
+kg_index_solidity = load_kg_index(S3_PATH_SOLIDITY, fs)
+kg_index_rust = load_kg_index(S3_PATH_RUST, fs)
+
 
 # Load guide document for dApp co-pilot
 vector_index = create_vector_embeddings()
@@ -110,6 +113,10 @@ vector_index = create_vector_embeddings()
 
 kg_index_substrate_retriever = kg_index_substrate.as_retriever()
 kg_index_ink_retriever = kg_index_ink.as_retriever()
+kg_index_solidity_retriever = kg_index_solidity.as_retriever()
+kg_index_rust_retriever = kg_index_rust.as_retriever()
+
+
 vector_index_retriever = vector_index.as_retriever()
 
 
@@ -126,6 +133,21 @@ kg_index_ink_tool = RetrieverTool.from_defaults(
         "Useful for retrieving specific  data related to Ink knowledge graph."
     ),
 )
+
+kg_index_solidity_tool = RetrieverTool.from_defaults(
+    retriever=kg_index_solidity_retriever,
+    description=(
+        "Useful for retrieving specific  data related to Solidity knowledge graph."
+    ),
+)
+
+kg_rust_solidity_tool = RetrieverTool.from_defaults(
+    retriever=kg_index_rust_retriever,
+    description=(
+        "Useful for retrieving specific  data related to Rust knowledge graph."
+    ),
+)
+
 
 vector_tool = RetrieverTool.from_defaults(
     retriever=vector_index_retriever,
