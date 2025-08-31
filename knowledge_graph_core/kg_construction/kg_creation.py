@@ -7,7 +7,6 @@ from llama_index.core import (
 from llama_index.readers.github import GithubRepositoryReader, GithubClient
 from llama_index.core.prompts.base import PromptTemplate
 from llama_index.core.prompts.prompt_type import PromptType
-from llama_index.llms.openai import OpenAI
 from llama_index.core.graph_stores import SimpleGraphStore
 from pyvis.network import Network
 from dotenv import load_dotenv

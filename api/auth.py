@@ -1,3 +1,4 @@
+import os
 import bcrypt
 import yaml
 from fastapi import Depends, HTTPException, status
@@ -12,7 +13,8 @@ def load_users_from_yaml(file_path):
         return users
 
 # Load users from YAML file
-users = load_users_from_yaml('users.yaml')
+users_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'users.yaml')
+users = load_users_from_yaml(users_file_path)
 
 def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
     hashed_password = users.get(credentials.username)

@@ -86,33 +86,10 @@ class LLMQueryRouter:
             streaming=True  # Ensure streaming is enabled
         )
 
-async def router_chat_streaming(
-    query: str,
-    kg_name: str,
-    session_id: str,
-    chat_memory,
-    indices: dict
-) -> AsyncGenerator[str, None]:
-    """Streaming chat function with LLM selection"""
-    
-    router = LLMQueryRouter(
-        kg_index_substrate=indices['substrate'],
-        kg_index_ink=indices['ink'],
-        kg_index_solidity=indices['solidity'],
-        kg_index_rust=indices['rust'],
-        vector_index=indices['vector']
+def router_chat_streaming(retriever: RouterRetriever, memory) -> ContextChatEngine:
+    """Creates a streaming chat engine with the given retriever and memory"""
+    return ContextChatEngine.from_defaults(
+        retriever=retriever,
+        memory=memory,
+        streaming=True  # Ensure streaming is enabled
     )
-    
-    # Get chat engine
-    chat_engine = await router.get_chat_engine(
-        query=query,
-        kg_name=kg_name,
-        memory=chat_memory
-    )
-    
-    # Use regular stream_chat
-    response = chat_engine.stream_chat(query)
-    
-    # Convert regular generator to async generator
-    for token in response.response_gen:
-        yield token

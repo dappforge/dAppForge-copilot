@@ -1,10 +1,14 @@
 import redis
+import os
 import json
 from typing import Optional
 import asyncio
 
 # Initialize Redis client
-redis_client = redis.Redis(host='localhost', port=6379, db=0)
+_REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+_REDIS_PORT = int(os.getenv('REDIS_PORT', '6379'))
+_REDIS_DB = int(os.getenv('REDIS_DB', '0'))
+redis_client = redis.Redis(host=_REDIS_HOST, port=_REDIS_PORT, db=_REDIS_DB)
 
 def generate_cache_key(*args, **kwargs) -> str:
     unique_string = ''.join(str(arg) for arg in args) + ''.join(f"{k}={v}" for k, v in kwargs.items())

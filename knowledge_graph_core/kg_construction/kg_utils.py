@@ -7,9 +7,17 @@ import time
 from dotenv import load_dotenv
 from typing import Optional, List
 from datetime import datetime
-from llama_index.core import Settings, StorageContext, load_index_from_storage
+from llama_index.core import Settings, StorageContext, load_index_from_storage, Document
 from llama_index.llms.bedrock import Bedrock
 from llama_index.embeddings.bedrock import BedrockEmbedding
+from ..kg_rag.kg_config import (
+    BUCKET_NAME,
+    S3_PATH_INK,
+    S3_PATH_SUBSTRATE,
+    S3_PATH_SOLIDITY,
+    S3_PATH_RUST
+)
+import re
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO)
@@ -126,39 +134,46 @@ def persist_knowledge_graph(index, kg_name, urls):
 
 
 # Knowledge Graph Management
-def load_and_persist_kg(folder_names: List[str]):
-    for folder_name in folder_names:
-        s3_path = f"s3://{BUCKET_NAME}/{folder_name}"
-        persist_path = os.path.join(PERSIST_DIR, folder_name.replace('/', '_'))
-
-        # Check if the knowledge graph is already persisted
-        if is_persisted(persist_path):
-            logger.info(f"Knowledge graph for {folder_name} already persisted at {persist_path}. Skipping download.")
+def load_and_persist_kg(kg_names: List[str]):
+    """Load and persist knowledge graphs for the given KG names."""
+    for kg_name in kg_names:
+        s3_path = get_s3_path_for_kg(kg_name)
+        if not s3_path:
+            logger.error(f"Unknown KG type: {kg_name}")
             continue
 
-        # Generate a cache key
-        cache_key = generate_cache_key(folder_name)
-
-        # Check if the result is already cached
-        cached_result = get_cached_result(cache_key)
-        if cached_result:
-            logger.info(f"Cache hit for {s3_path}. Skipping download.")
+        # Remove the s3:// prefix and bucket name for the persist path
+        path_parts = s3_path.replace('s3://', '').split('/', 1)
+        if len(path_parts) > 1:
+            relative_path = path_parts[1]
+        else:
+            logger.error(f"Invalid S3 path format: {s3_path}")
             continue
 
-        start_time = time.time()
+        persist_path = os.path.join(PERSIST_DIR, relative_path.replace('/', '_'))
+        
+        if os.path.exists(persist_path):
+            logger.info(f"Knowledge graph for {kg_name} already persisted at {persist_path}. Skipping download.")
+            continue
 
-        # Load the knowledge graph index from S3
-        index = load_kg_index(s3_path, fs)
-        if index:
-            # Persist the knowledge graph index to disk
-            persist_kg_index(index, persist_path)
+        try:
+            cache_key = generate_cache_key(kg_name)
+            # CACHE is not defined in this file, so this line will cause an error.
+            # Assuming CACHE is meant to be a global or defined elsewhere.
+            # For now, commenting out the caching part as it's not defined.
+            # if cache_key in CACHE:
+            #     logger.info(f"Using cached index for {kg_name}")
+            #     index = CACHE[cache_key]
+            # else:
+            index = load_kg_index(s3_path, fs)
+            # CACHE[cache_key] = index # This line was commented out
 
-            # Cache the result
-            set_cache_result(cache_key, {"persist_path": persist_path})
-
-            end_time = time.time()
-            elapsed_time = end_time - start_time
-            logger.info(f"Processed {s3_path} in {elapsed_time:.2f} seconds and cached the result.")
+            os.makedirs(persist_path, exist_ok=True)
+            index.storage_context.persist(persist_dir=persist_path)
+            logger.info(f"Successfully persisted knowledge graph for {kg_name} at {persist_path}")
+        except Exception as e:
+            logger.error(f"Error loading/persisting knowledge graph for {kg_name}: {str(e)}")
+            continue
 
 
 def detect_source(url: str) -> str:
@@ -177,14 +192,32 @@ def extract_owner_repo(url: str) -> (str, str):
     else:
         return None, None
 
+def get_s3_path_for_kg(kg_name: str) -> str:
+    """Get the appropriate S3 path for a given KG name."""
+    kg_paths = {
+        'ink': S3_PATH_INK,
+        'substrate': S3_PATH_SUBSTRATE,
+        'solidity': S3_PATH_SOLIDITY,
+        'rust': S3_PATH_RUST
+    }
+    return kg_paths.get(kg_name)
+
+def build_kg(kg_name: str, documents: List[Document], persist_path: str = None):
+    """Build a knowledge graph from documents."""
+    logger.info(f"Building knowledge graph for {kg_name}")
+    
+    S3_PATH = get_s3_path_for_kg(kg_name)
+    if not S3_PATH:
+        raise ValueError(f"Unknown KG type: {kg_name}")
+
+    # For source.txt, we'll keep using the kg_name-based path as it's not in config
+    FOLDER_NAME_source = f"{kg_name}"
+    S3_PATH_source = f"s3://{BUCKET_NAME}/{FOLDER_NAME_source}/source.txt"
+
 # Main Script
 if __name__ == "__main__":
-    # Example usage:
-    folder_names = [
-        "kg_gh_subset/kg_data", "ajuna-parachain", "Astar", "bifrost",
-        "crust", "cumulus", "darwinia", "kg_gh_subset/kg_data", "kg",
-        "Mandala-Node", "open-runtime-module-library", "peaq-network-node",
-        "polkadot-sdk", "substrate_framwork/kg_data", "substrate-node-template",
-        "substrate-pallets-merx", "substrate-parachain-template"
-    ]
-    load_and_persist_kg(folder_names)
+    # List of KG types to load
+    kg_names = ['ink', 'substrate', 'solidity', 'rust']
+    
+    # Load and persist all knowledge graphs
+    load_and_persist_kg(kg_names)

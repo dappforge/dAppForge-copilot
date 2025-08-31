@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 
 class AnswerFormat(BaseModel):
@@ -7,7 +7,7 @@ class AnswerFormat(BaseModel):
 
 class CodeRequest(BaseModel):
     prefix_code: str
-    kg_name: str
+    kg_name: str  
 
 class ChatRequest(BaseModel):
     query: str
@@ -16,16 +16,22 @@ class ChatRequest(BaseModel):
 
 class CodeResponse(BaseModel):
     generated_code: str
-    kg_edges: list
-    subgraph_plot: str
+    kg_edges: Optional[List] = None
+    subgraph_plot: Optional[str] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+
+class ChatResponse(BaseModel):
+    response: str
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
 
 class KGCreationRequest(BaseModel):
-    urls: List[str]
-    kg_name: Optional[str] = None
+    url: str
+    kg_name: str
 
 class MergeKGRequest(BaseModel):
-    kg_names: list
-    prefix_code: str
+    kg_names: List[str]
 
 #Response class for output parsing
 class Response:

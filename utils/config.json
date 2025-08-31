@@ -1,13 +1,11 @@
 {
-    "BUCKET_NAME": "",
-    "FOLDER_NAME": "",
-    "S3_PATH_INK": "",
-    "S3_PATH_SUBSTRATE": "",
-    "PERSIST_DISK_PATH": "",
-    "AWS_REGION": "",
-    "LLM_MODEL": "",
-    "EMBED_MODEL": "",
-    "WANDB_PROJECT": "",
-    "WANDB_ENTITY": ""
-  }
-  
+  "BUCKET_NAME": "knowledge-graph-data",
+  "S3_PATH_INK": "s3://knowledge-graph-data/use_ink_kg/kg_data",
+  "S3_PATH_SUBSTRATE": "s3://knowledge-graph-data/substrate_v03/kg_data",
+  "S3_PATH_SOLIDITY": "s3://knowledge-graph-data/solidity_kg_v2/kg_data",
+  "S3_PATH_RUST": "s3://knowledge-graph-data/rust_kg/kg_data",
+  "PERSIST_DISK_PATH": "/home/ubuntu/dApp/knowledge_graph_data/kg",
+  "AWS_REGION": "us-east-1",
+  "LLM_MODEL": "us.anthropic.claude-sonnet-4-20250514-v1:0",
+  "EMBED_MODEL": "cohere.embed-multilingual-v3"
+}
