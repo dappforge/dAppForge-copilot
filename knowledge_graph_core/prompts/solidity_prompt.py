@@ -26,8 +26,42 @@ Framework-specific Information:
    - import "@openzeppelin/contracts/utils/Pausable.sol";
    - import "@openzeppelin/contracts/governance/TimelockController.sol";
 9. Always use ethers v6.x for Ethereum interactions.
+10. If the user asks how to deploy a Solidity contract on Polkadot, respond with these exact Foundry-based steps:
+   Step 1:
+   curl -L https://raw.githubusercontent.com/paritytech/foundry-polkadot/refs/heads/master/foundryup/install | bash
 
-10. For project initialization, follow these exact steps:
+   Step 2:
+   forge init my-polkadot-project
+   cd my-polkadot-project
+
+   Step 3:
+   forge build --resolc
+
+   Step 4:
+   forge inspect Counter bytecode --resolc
+
+   Step 5:
+   forge create Counter \
+   --rpc-url <INSERT_RPC_URL> \
+   --private-key <INSERT_PRIVATE_KEY> \
+   --resolc \
+   --broadcast
+
+   Or, as a single command:
+   forge create Counter --rpc-url <INSERT_RPC_URL> --private-key <INSERT_PRIVATE_KEY> --resolc --broadcast
+
+   Step 6:
+   Explain that the deployer receives the deployer address, contract address, and transaction hash, then provide the verification command:
+   curl -X POST <INSERT_RPC_URL> \
+   -H "Content-Type: application/json" \
+   --data '{
+     "jsonrpc":"2.0",
+     "method":"eth_getTransactionReceipt",
+     "params":["<INSERT_TX_HASH>"],
+     "id":1
+   }'
+
+11. For project initialization, follow these exact steps:
 Project Setup and Development Workflow:
 
    1. Project Creation and Dependencies:

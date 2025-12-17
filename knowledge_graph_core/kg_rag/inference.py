@@ -521,7 +521,7 @@ class MemgraphRetriever(BaseRetriever):
             username=self.username,
             password=self.password,
             index_name="kgtriple_embedding",
-            k_triples=12,  # Same as script
+            k_triples=8,  # Reduced from 12 for faster retrieval
             k_chunks_per_triple=2  # Same as script
         )
         
@@ -587,8 +587,8 @@ def composable_graph_inference(composable_graph, prefix_code):
 async def claude_chat_streaming(query: str, kg_name: str, session_id: str):
     """Perform streaming chat inference using Claude."""
     try:
-        print(f"🔍 Starting chat streaming for kg_name: {kg_name}, session: {session_id}")
-        print(f"📝 Query: {query[:200]}...")
+        print(f"Starting chat streaming for kg_name: {kg_name}, session: {session_id}")
+        print(f"Query: {query[:200]}...")
         
         if session_id not in chat_memory:
             print(f"🆕 Creating new chat memory for session: {session_id}")
@@ -600,63 +600,49 @@ async def claude_chat_streaming(query: str, kg_name: str, session_id: str):
 
         # Get Memgraph config and create query engine on-demand (like Streamlit)
         # Config and engine are pre-warmed at startup; this is a cheap lookup
-        print(f"🔗 Getting Memgraph config for {kg_name}...")
+        print(f"Getting Memgraph config for {kg_name}...")
         config = MEMGRAPH_CONFIGS.get(kg_name)
         if not config:
             raise ValueError(f"Memgraph configuration not found for kg_name: {kg_name}")
 
         query_engine = get_memgraph_query_engine(kg_name, config)
-        print(f" Executing query...")
-        context_response = query_engine.query(query)
-        print(f"📊 Context response received: {len(context_response.response)} characters")
-        print(f"📄 Context preview: {context_response.response[:200]}...")
+        print(f"Executing retrieval...")
         
-        # Debug: Show all source nodes
-        if hasattr(context_response, 'source_nodes') and context_response.source_nodes:
-            print(f"🔍 Found {len(context_response.source_nodes)} source nodes:")
-            for i, node in enumerate(context_response.source_nodes[:3]):  # Show first 3
-                print(f"   Node {i+1}: {node.node.text[:150]}...")
-        else:
-            print(f"🔍 No source nodes found in response")
-        
-        # Use the same approach as claude_inference - call LLM directly with context
+        # Skip synthesis; retrieve directly for speed
+        from llama_index.core.schema import QueryBundle
         from llama_index.core.llms import ChatMessage
         
-        # Rebuild raw context_text from source_nodes with relevance capping
-        all_nodes = list(getattr(context_response, "source_nodes", [])) or []
+        retriever = query_engine.retriever
+        all_nodes = retriever.retrieve(QueryBundle(query))
+        print(f"Retrieved {len(all_nodes)} nodes directly (skipping synthesis for speed)")
+        
+        # Debug: Show top nodes
+        if all_nodes:
+            for i, node in enumerate(all_nodes[:3]):
+                print(f"   Node {i+1}: {node.node.text[:150]}...")
+        
+        # Use direct retrieval approach - call LLM directly with context
         # Prefer OZ-related nodes (up to 4), then fill with others up to 10 total
         oz_nodes = [n for n in all_nodes if any(k in (n.node.text or "").lower() for k in ["openzeppelin","timelock","ownable","accesscontrol"])]
         non_oz_nodes = [n for n in all_nodes if n not in oz_nodes]
         selected = oz_nodes[:4] + non_oz_nodes[:6]
         context_text = "\n\n".join(n.node.text for n in selected if getattr(n, "node", None))
-        print(f"📝 Raw context text length: {len(context_text)} characters")
+        print(f"Raw context text length: {len(context_text)} characters")
         
         # Only detect/use OpenZeppelin guidance for Solidity
         is_solidity = (kg_name or "").lower().startswith("solidity")
         # Check if OpenZeppelin data was found in the context (solidity only)
         has_openzeppelin = False
-        if is_solidity and hasattr(context_response, 'source_nodes'):
+        if is_solidity and all_nodes:
             has_openzeppelin = any(
                 ("openzeppelin" in node.node.text.lower() or
                  "timelock" in node.node.text.lower() or
                  "ownable" in node.node.text.lower() or
                  "accesscontrol" in node.node.text.lower())
-                for node in context_response.source_nodes
+                for node in all_nodes
             )
-        
-        # Debug: Show what OpenZeppelin data was found
-        if is_solidity and has_openzeppelin:
-            openzeppelin_nodes = [node for node in context_response.source_nodes if "openzeppelin" in node.node.text.lower() or "timelock" in node.node.text.lower() or "ownable" in node.node.text.lower() or "accesscontrol" in node.node.text.lower()]
-            print(f"🔍 Found {len(openzeppelin_nodes)} OpenZeppelin nodes:")
-            for i, node in enumerate(openzeppelin_nodes[:3]):  # Show first 3
-                print(f"   {i+1}. {node.node.text[:300]}...")
-                print(f"      Contains timelock: {'timelock' in node.node.text.lower()}")
-                print(f"      Contains openzeppelin: {'openzeppelin' in node.node.text.lower()}")
-        
-        # Also check the context response text itself
-        if is_solidity and ("openzeppelin" in context_text.lower() or "timelock" in context_text.lower()):
-            print(f"🔍 OpenZeppelin content found in context text")
-            has_openzeppelin = True
+            if has_openzeppelin:
+                print(f"OpenZeppelin content found in retrieved nodes")
         
         # Use context_text instead of context_response.response
         user_message = f"Context:\n{context_text}\n\nQuestion: {query}"
@@ -668,23 +654,30 @@ async def claude_chat_streaming(query: str, kg_name: str, session_id: str):
             ChatMessage(role="user", content=user_message)
         ]
         
-        print(f"🤖 Calling LLM with {len(messages)} messages...")
-        print(f"📝 User message preview: {user_message[:300]}...")
+        print(f"Calling LLM with {len(messages)} messages...")
+        print(f"User message preview: {user_message[:300]}...")
         if is_solidity and has_openzeppelin:
-            print(f"🚨 OpenZeppelin instruction added to user message")
+            print(f"OpenZeppelin instruction added to user message")
 
         # True streaming from Bedrock (with safe fallback)
+        import asyncio
+        
         accumulated: list[str] = []
         try:
-            if hasattr(bedrock_llm, "stream_chat"):
+            has_stream_chat = hasattr(bedrock_llm, "stream_chat")
+            maybe_stream = getattr(bedrock_llm, "stream", None)
+            has_stream_callable = callable(maybe_stream)
+            print(f"Streaming capability - stream_chat: {has_stream_chat}, stream(): {has_stream_callable}")
+
+            if has_stream_chat:
+                print("Using bedrock_llm.stream_chat for streaming")
                 stream = bedrock_llm.stream_chat(messages)
+            elif has_stream_callable:
+                print("Using bedrock_llm.stream(messages) for streaming")
+                stream = maybe_stream(messages)
             else:
-                # Some versions expose a generic stream() – try it
-                stream = getattr(bedrock_llm, "stream", None)
-                if callable(stream):
-                    stream = stream(messages)
-                else:
-                    stream = None
+                print("No streaming method available; falling back to chat()")
+                stream = None
 
             if stream is not None:
                 for event in stream:  # type: ignore[arg-type]
@@ -698,23 +691,39 @@ async def claude_chat_streaming(query: str, kg_name: str, session_id: str):
                         token = event
                     if token:
                         accumulated.append(token)
-                        # yield each token immediately (true SSE streaming)
+                        # Emit raw text without SSE framing
                         yield token
+                        # Tiny sleep to encourage flush
+                        await asyncio.sleep(0)
             else:
                 # Fallback to non‑streaming call
                 llm_response = bedrock_llm.chat(messages)
                 response_text = llm_response.message.content
                 accumulated.append(response_text)
-                # Stream out the whole text once
-                yield response_text
+                # Chunk and stream as plain text to ensure clients receive incremental data
+                chunk_size = 256
+                for i in range(0, len(response_text), chunk_size):
+                    chunk = response_text[i:i + chunk_size]
+                    yield chunk
+                    await asyncio.sleep(0)
         except Exception as _stream_exc:
+            print(f"Streaming error encountered: {type(_stream_exc).__name__}: {str(_stream_exc)}. Falling back to non-streaming chat().")
             # If streaming fails for any reason, attempt a non-streaming fallback
             llm_response = bedrock_llm.chat(messages)
             response_text = llm_response.message.content
             accumulated.append(response_text)
-            yield response_text
+            # Chunk and stream as plain text
+            chunk_size = 256
+            for i in range(0, len(response_text), chunk_size):
+                chunk = response_text[i:i + chunk_size]
+                yield chunk
+                await asyncio.sleep(0)
 
         response_text = "".join(accumulated)
+        
+        # Calculate token counts
+        input_tokens = len(query) // 4
+        output_tokens = len(response_text) // 4
 
         # Persist this interaction to DynamoDB (best‑effort, non‑blocking for chat)
         try:
@@ -743,12 +752,7 @@ async def claude_chat_streaming(query: str, kg_name: str, session_id: str):
             # Do not fail the chat if persistence has issues
             pass
         
-        # Calculate tokens - try to get from LLM response if available
-        # Note: For streaming, actual usage might not be available until end
-        input_tokens = len(query) // 4  # Heuristic for input
-        output_tokens = len(response_text) // 4  # Heuristic for output
-        
-        # Store token counts
+        # Store token counts (already calculated above in end event)
         token_storage[session_id] = {
             'last_input_tokens': input_tokens,
             'last_output_tokens': output_tokens
@@ -820,13 +824,13 @@ async def claude_chat_streaming(query: str, kg_name: str, session_id: str):
 def claude_inference(prefix_code: str, kg_name: str):
     """Perform inference using Claude with Memgraph."""
     try:
-        print(f"🔍 Starting inference for kg_name: {kg_name}")
+        print(f"Starting inference for kg_name: {kg_name}")
         query = template.format(prefix_code=prefix_code)
-        print(f"📝 Generated query: {query[:200]}...")
+        print(f"Generated query: {query[:200]}...")
 
         # Get Memgraph config and create query engine on-demand (like Streamlit)
         # Config and engine are pre-warmed at startup; this is a cheap lookup
-        print(f"🔗 Getting Memgraph config for {kg_name}...")
+        print(f"Getting Memgraph config for {kg_name}...")
         config = MEMGRAPH_CONFIGS.get(kg_name)
         if not config:
             raise ValueError(f"Memgraph configuration not found for kg_name: {kg_name}")
@@ -834,16 +838,16 @@ def claude_inference(prefix_code: str, kg_name: str):
         query_engine = get_memgraph_query_engine(kg_name, config)
         print(f" Executing query...")
         context_response = query_engine.query(query)
-        print(f"📊 Context response received: {len(context_response.response)} characters")
-        print(f"📄 Context preview: {context_response.response[:200]}...")
+        print(f"Context response received: {len(context_response.response)} characters")
+        print(f"Context preview: {context_response.response[:200]}...")
         
         # Debug: Show all source nodes
         if hasattr(context_response, 'source_nodes') and context_response.source_nodes:
-            print(f"🔍 Found {len(context_response.source_nodes)} source nodes:")
+            print(f"Found {len(context_response.source_nodes)} source nodes:")
             for i, node in enumerate(context_response.source_nodes[:3]):  # Show first 3
                 print(f"   Node {i+1}: {node.node.text[:150]}...")
         else:
-            print(f"🔍 No source nodes found in response")
+            print(f"No source nodes found in response")
         
         # Use the same approach as Streamlit - call LLM directly with context
         from llama_index.core.llms import ChatMessage
@@ -854,7 +858,7 @@ def claude_inference(prefix_code: str, kg_name: str):
         non_oz_nodes = [n for n in all_nodes if n not in oz_nodes]
         selected = oz_nodes[:4] + non_oz_nodes[:6]
         context_text = "\n\n".join(n.node.text for n in selected if getattr(n, "node", None))
-        print(f"📝 Raw context text length: {len(context_text)} characters")
+        print(f"Raw context text length: {len(context_text)} characters")
         
         # Check if OpenZeppelin data was found in the context
         has_openzeppelin = any("openzeppelin" in node.node.text.lower() or "timelock" in node.node.text.lower() or "ownable" in node.node.text.lower() or "accesscontrol" in node.node.text.lower() for node in context_response.source_nodes) if hasattr(context_response, 'source_nodes') else False
@@ -862,13 +866,13 @@ def claude_inference(prefix_code: str, kg_name: str):
         # Debug: Show what OpenZeppelin data was found
         if has_openzeppelin:
             openzeppelin_nodes = [node for node in context_response.source_nodes if "openzeppelin" in node.node.text.lower() or "timelock" in node.node.text.lower() or "ownable" in node.node.text.lower() or "accesscontrol" in node.node.text.lower()]
-            print(f"🔍 Found {len(openzeppelin_nodes)} OpenZeppelin nodes:")
+            print(f"Found {len(openzeppelin_nodes)} OpenZeppelin nodes:")
             for i, node in enumerate(openzeppelin_nodes[:2]):  # Show first 2
                 print(f"   {i+1}. {node.node.text[:200]}...")
         
         # Also check the context response text itself
         if "openzeppelin" in context_text.lower() or "timelock" in context_text.lower():
-            print(f"🔍 OpenZeppelin content found in context text")
+            print(f"OpenZeppelin content found in context text")
             has_openzeppelin = True
         
         # Use context_text instead of context_response.response
@@ -882,32 +886,32 @@ def claude_inference(prefix_code: str, kg_name: str):
             ChatMessage(role="user", content=user_message + "\n\nPlease output code only, no explanations.")
         ]
         
-        print(f"🤖 Calling LLM with {len(messages)} messages...")
-        print(f"📝 User message preview: {user_message[:300]}...")
+        print(f"Calling LLM with {len(messages)} messages...")
+        print(f"User message preview: {user_message[:300]}...")
         if has_openzeppelin:
-            print(f"🚨 OpenZeppelin instruction added to user message")
+            print(f"OpenZeppelin instruction added to user message")
         llm_response = bedrock_llm.chat(messages)
-        print(f"📊 LLM response received: {len(llm_response.message.content)} characters")
-        print(f"📄 LLM response preview: {llm_response.message.content[:200]}...")
+        print(f"LLM response received: {len(llm_response.message.content)} characters")
+        print(f"LLM response preview: {llm_response.message.content[:200]}...")
         
         # DEBUG: Inspect the full response structure to find usage info
-        print(f"🔍 LLM response type: {type(llm_response)}")
-        print(f"🔍 LLM response attributes: {dir(llm_response)}")
+        print(f"LLM response type: {type(llm_response)}")
+        print(f"LLM response attributes: {dir(llm_response)}")
         if hasattr(llm_response, 'additional_kwargs'):
-            print(f"🔍 Additional kwargs: {llm_response.additional_kwargs}")
+            print(f"Additional kwargs: {llm_response.additional_kwargs}")
         if hasattr(llm_response, 'usage'):
-            print(f"🔍 Usage info: {llm_response.usage}")
+            print(f"Usage info: {llm_response.usage}")
         if hasattr(llm_response, 'raw'):
-            print(f"🔍 Raw response type: {type(llm_response.raw)}")
+            print(f"Raw response type: {type(llm_response.raw)}")
             if hasattr(llm_response.raw, 'get'):
-                print(f"🔍 Raw response keys: {list(llm_response.raw.keys()) if hasattr(llm_response.raw, 'keys') else 'No keys'}")
+                print(f"Raw response keys: {list(llm_response.raw.keys()) if hasattr(llm_response.raw, 'keys') else 'No keys'}")
                 usage_raw = llm_response.raw.get('usage', None)
                 if usage_raw:
-                    print(f"🔍 Raw usage: {usage_raw}")
+                    print(f"Raw usage: {usage_raw}")
                     
         # Also check if there's usage in the message itself
         if hasattr(llm_response, 'message') and hasattr(llm_response.message, 'additional_kwargs'):
-            print(f"🔍 Message additional kwargs: {llm_response.message.additional_kwargs}")
+            print(f"Message additional kwargs: {llm_response.message.additional_kwargs}")
         
         # Try to get actual token usage from Bedrock response, fallback to heuristic
         if hasattr(llm_response, 'usage') and llm_response.usage:

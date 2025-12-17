@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dapp-codegen-api:latest
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+    environment:
+      # Redis
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      # AWS / Bedrock / Langfuse envs should be injected via .env
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - INTERNAL_LANGFUSE_PUBLIC_KEY
+      - INTERNAL_LANGFUSE_SECRET_KEY
+      - INTERNAL_LANGFUSE_HOST
+      - CLIENT_LANGFUSE_PUBLIC_KEY
+      - CLIENT_LANGFUSE_SECRET_KEY
+      - CLIENT_LANGFUSE_HOST
+      - DDB_CHAT_TABLE
+    # No local Redis dependency; points to external instance via .env

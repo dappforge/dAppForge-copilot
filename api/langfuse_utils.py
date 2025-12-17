@@ -107,55 +107,40 @@ def _get_langfuse_client():
     return _langfuse_client
 
 def log_generation_usage(name: str, model: str, input_text: str, output_text: str, input_tokens: int | None = None, output_tokens: int | None = None, metadata: dict | None = None) -> None:
-    """Best-effort: emit a Langfuse generation with usage so costs can be computed.
-
-    This does not change existing LlamaIndex tracing; it just ensures pricing works
-    even if inference cannot derive usage from traces.
-    """
-    # Try method 1: Direct Langfuse client
-    client = _get_langfuse_client()
-    if client is None:
-        logger.warning(f"Direct Langfuse client is None - trying alternative method")
+    """Log generation with usage to Langfuse for cost tracking and observability."""
+    # Use the callback handler's underlying client (proven to work)
+    if not langfuse_handlers or 'internal' not in langfuse_handlers:
+        logger.debug(f"Langfuse not initialized; skipping trace for {name}")
+        return
         
-        # Try method 2: Use the existing callback handlers that are working for traces
-        if langfuse_handlers and 'internal' in langfuse_handlers:
-            try:
-                handler = langfuse_handlers['internal']
-                logger.info(f"Trying to log via LlamaIndex callback handler: {name}, model={model}")
-                
-                # Try to access the underlying Langfuse client from the handler
-                if hasattr(handler, 'langfuse') and handler.langfuse:
-                    client = handler.langfuse
-                    logger.info("Successfully got Langfuse client from callback handler")
-                else:
-                    logger.warning("Cannot access Langfuse client from callback handler")
-                    return
-            except Exception as e:
-                logger.warning(f"Failed to get client from callback handler: {e}")
-                return
-        else:
-            logger.warning(f"No langfuse_handlers available - cannot log usage for {name} with model {model}")
-            return
-    
-    logger.info(f"Logging usage to Langfuse: {name}, model={model}, input_tokens={input_tokens}, output_tokens={output_tokens}")
     try:
+        handler = langfuse_handlers['internal']
+        if not hasattr(handler, 'langfuse') or not handler.langfuse:
+            logger.warning("Langfuse client not available in callback handler")
+            return
+            
+        client = handler.langfuse
+        
         usage = {}
-        if isinstance(input_tokens, int):
+        if isinstance(input_tokens, int) and input_tokens > 0:
             usage['input'] = input_tokens
-        if isinstance(output_tokens, int):
+        if isinstance(output_tokens, int) and output_tokens > 0:
             usage['output'] = output_tokens
-        client.generation(
+        
+        # Create a trace with a clean name
+        trace = client.trace(name=name, metadata=metadata or {})
+        
+        # Add generation to the trace
+        trace.generation(
             name=name,
             model=model,
-            input=input_text,
-            output=output_text,
-            usage_details=usage if usage else None,
-            metadata=metadata or {},
+            input=input_text[:2000],  # Truncate large inputs
+            output=output_text[:5000],  # Truncate large outputs
+            usage=usage if usage else None,
         )
-        # Flush immediately to ensure the generation is sent
+        
+        # Flush immediately
         client.flush()
-        logger.info(f"Successfully logged usage to Langfuse for {name}")
+        logger.info(f"Logged Langfuse trace: {name} (tokens: {input_tokens}/{output_tokens})")
     except Exception as e:
-        # Log the error for debugging but don't fail the request
-        logger.warning(f"Failed to log generation usage to Langfuse: {type(e).__name__}: {str(e)}")
-        logger.warning(f"Model: {model}, Input tokens: {input_tokens}, Output tokens: {output_tokens}")
+        logger.warning(f"Failed to log to Langfuse: {type(e).__name__}: {str(e)}")

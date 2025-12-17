@@ -1,0 +1,311 @@
+[[repositories]]
+name="polkadot-sdk"
+git_url = "https://github.com/paritytech/polkadot-sdk"
+
+[[repositories]]
+name="substrate"
+git_url = "https://github.com/paritytech/substrate"
+
+[[repositories]]
+name = "open-runtime-module-library"
+git_url = "https://github.com/open-web3-stack/open-runtime-module-library"
+
+[[repositories]]
+name = "substrate-node-template"
+git_url = "https://github.com/substrate-developer-hub/substrate-node-template"
+
+[[repositories]]
+name = "substrate-parachain-template"
+git_url = "https://github.com/substrate-developer-hub/substrate-parachain-template"
+
+[[repositories]]
+name = "cumulus"
+git_url = "https://github.com/paritytech/cumulus"
+
+[[repositories]]
+name = "rust"
+git_url = "https://github.com/rust-lang/rust"
+
+[[repositories]]
+name = "pallet-project"
+git_url = "https://github.com/merxhanneurons/pallet-project"
+
+[[repositories]]
+name = "substrate-pallets-merx"
+git_url = "https://github.com/merxhanneurons/substrate-pallets-merx"
+
+[[repositories]]
+name = "Acala"
+git_url = "https://github.com/AcalaNetwork/Acala"
+
+[[repositories]]
+name = "ajuna-parachain"
+git_url = "https://github.com/ajuna-network/ajuna-parachain"
+
+[[repositories]]
+name = "Astar"
+git_url = "https://github.com/AstarNetwork/Astar"
+
+[[repositories]]
+name = "bifrost"
+git_url = "https://github.com/bifrost-finance/bifrost"
+
+[[repositories]]
+name = "crust"
+git_url = "https://github.com/crustio/crust"
+
+[[repositories]]
+name = "darwinia"
+git_url = "https://github.com/darwinia-network/darwinia"
+
+[[repositories]]
+name = "Mandala-Node"
+git_url = "https://github.com/MandalaChain/Mandala-Node"
+
+[[repositories]]
+name = "peaq-network-node"
+git_url = "https://github.com/peaqnetwork/peaq-network-node"
+
+[[repositories]]
+name = "phala-blockchain"
+git_url = "https://github.com/Phala-Network/phala-blockchain"
+
+[[repositories]]
+name = "moonbeam"
+git_url = "https://github.com/moonbeam-foundation/moonbeam"
+
+[[repositories]]
+name = "polimec-node"
+git_url = "https://github.com/Polimec/polimec-node"
+
+[[repositories]]
+name = "num-traits"
+git_url = "https://github.com/rust-num/num-traits"
+
+[[repositories]]
+name = "expr.rs"
+git_url = "https://github.com/Cryptex-github/expr.rs"
+
+[[repositories]]
+name = "Dropplet"
+git_url = "https://github.com/Flaxoos/Dropplet"
+
+[[repositories]]
+name = "ink"
+git_url = "https://github.com/use-ink/ink"
+
+[[repositories]]
+name = "frontier"
+git_url = "https://github.com/polkadot-evm/frontier"
+
+[[repositories]]
+name = "parity-bridges-common"
+git_url = "https://github.com/paritytech/parity-bridges-common"
+
+[[repositories]]
+name = "grandpa-bridge-gadget"
+git_url = "https://github.com/paritytech/grandpa-bridge-gadget"
+
+[[repositories]]
+name = "substrate-api-client"
+git_url = "https://github.com/scs/substrate-api-client"
+
+[[repositories]]
+name = "edgeware-node"
+git_url = "https://github.com/hicommonwealth/edgeware-node"
+
+[[repositories]]
+name ="litentry-node"
+git_url = "https://github.com/litentry/litentry-node"
+
+[[repositories]]
+name = "chainbridge-substrate-chain"
+git_url = "https://github.com/ChainSafe/chainbridge-substrate-chain"
+
+[[repositories]]
+name = "subsocial-solochain"
+git_url = "https://github.com/dappforce/subsocial-solochain"
+
+[[repositories]]
+name = "unique-chain"
+git_url = "https://github.com/UniqueNetwork/unique-chain"
+
+[[repositories]]
+name = "sunshine"
+git_url = "https://github.com/sunshine-protocol/sunshine"
+
+[[repositories]]
+name = "parity-ethereum"
+git_url = "https://github.com/openethereum/parity-ethereum"
+
+[[repositories]]
+name = "robonomics"
+git_url = "https://github.com/airalab/robonomics"
+
+[[repositories]]
+name = "centrifuge-chain"
+git_url = "https://github.com/centrifuge/centrifuge-chain"
+
+[[repositories]]
+name = "zero-chain"
+git_url = "https://github.com/LayerXcom/zero-chain"
+
+[[repositories]]
+name = "solang"
+git_url = "https://github.com/hyperledger/solang"
+
+[[repositories]]
+name = "iroha"
+git_url = "https://github.com/hyperledger/iroha"
+
+[[repositories]]
+name = "indy-vdr"
+git_url = "https://github.com/hyperledger/indy-vdr"
+
+[[repositories]]
+name = "aries-vcx"
+git_url = "https://github.com/hyperledger/aries-vcx"
+
+[[repositories]]
+name = "indy-shared-rs"
+git_url = "https://github.com/hyperledger/indy-shared-rs"
+
+[[repositories]]
+name = "substrate-stencil"
+git_url = "https://github.com/kaichaosun/substrate-stencil"
+
+[[repositories]]
+name = "Rocket"
+git_url = "https://github.com/rwf2/Rocket"
+
+[[repositories]]
+name = "actix-web"
+git_url = "https://github.com/actix/actix-web"
+
+[[repositories]]
+name = "finnhub-stock-analysis-rs"
+git_url = "https://github.com/pkarakal/finnhub-stock-analysis-rs"
+
+[[repositories]]
+name = "rusty_group_chat"
+git_url = "https://github.com/Jurshsmith/rusty_group_chat"
+
+[[repositories]]
+name = "tokio-tungstenite"
+git_url = "https://github.com/snapview/tokio-tungstenite"
+
+[[repositories]]
+name = "alacritty"
+git_url = "https://github.com/alacritty/alacritty"
+
+[[repositories]]
+name = "rustlings"
+git_url = "https://github.com/rust-lang/rustlings"
+
+[[repositories]]
+name = "Mirage"
+git_url = "https://github.com/mirage-rs/Mirage"
+
+[[repositories]]
+name = "meilisearch"
+git_url = "https://github.com/meilisearch/meilisearch"
+
+[[repositories]]
+name = "ripgrep"
+git_url = "https://github.com/BurntSushi/ripgrep"
+
+[[repositories]]
+name = "bat"
+git_url = "https://github.com/sharkdp/bat"
+
+[[repositories]]
+name = "bevy"
+git_url = "https://github.com/bevyengine/bevy"
+
+[[repositories]]
+name ="fd"
+git_url = "https://github.com/sharkdp/fd"
+
+[[repositories]]
+name ="nushell"
+git_url = "https://github.com/nushell/nushell"
+
+[[repositories]]
+name ="swc"
+git_url = "https://github.com/swc-project/swc"
+
+[[repositories]]
+name = "influxdb"
+git_url = "https://github.com/influxdata/influxdb"
+
+[[repositories]]
+name = "ruff"
+git_url = "https://github.com/astral-sh/ruff"
+
+[[repositories]]
+name = "firecracker"
+git_url = "https://github.com/firecracker-microvm/firecracker"
+
+[[repositories]]
+name = "vaultwarden"
+git_url = "https://github.com/dani-garcia/vaultwarden"
+
+[[repositories]]
+name = "rust-clippy"
+git_url = "https://github.com/rust-lang/rust-clippy"
+
+[[repositories]]
+name = "serde"
+git_url = "https://github.com/serde-rs/serde"
+
+[[repositories]]
+name = "rust-analyzer"
+git_url = "https://github.com/rust-lang/rust-analyzer"
+
+[[repositories]]
+name = "tokio"
+git_url = "https://github.com/tokio-rs/tokio"
+
+[[repositories]]
+name = "diesel"
+git_url = "https://github.com/diesel-rs/diesel"
+
+[[repositories]]
+name = "conductor"
+git_url = "https://github.com/the-guild-org/conductor"
+
+[[repositories]]
+name = "seamless"
+git_url = "https://github.com/jsdw/seamless"
+
+[[repositories]]
+name = "Rust"
+git_url = "https://github.com/TheAlgorithms/Rust"
+
+[[repositories]]
+name = "iced"
+git_url = "https://github.com/iced-rs/iced"
+
+[[repositories]]
+name = "hyperfine"
+git_url = "https://github.com/sharkdp/hyperfine"
+
+[[repositories]]
+name = "atuin"
+git_url = "https://github.com/atuinsh/atuin"
+
+[[repositories]]
+name = "egui"
+git_url = "https://github.com/emilk/egui"
+
+[[repositories]]
+name = "sonic"
+git_url = "https://github.com/valeriansaliou/sonic"
+
+[[repositories]]
+name = "zoxide"
+git_url = "https://github.com/ajeetdsouza/zoxide"
+
+[[repositories]]
+name = "dioxus"
+git_url = "https://github.com/DioxusLabs/dioxus"

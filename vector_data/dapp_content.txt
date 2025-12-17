@@ -1,0 +1,90 @@
+
+dApp: Coding Co-pilot for Rust, Substrate, and Ink Frameworks
+
+Introduction
+The dApp Coding Co-pilot is a specialized tool built to assist developers working with Rust, Substrate, and Ink frameworks. 
+As a plugin for Visual Studio Code (VS Code), it provides intelligent code suggestions, auto-completion, and debugging support, streamlining blockchain and smart contract development.
+
+Installation
+
+VS Code Plugin Installation
+To install the dApp coding co-pilot:
+1. Open VS Code and navigate to the Extensions Marketplace.
+2. Search for the "dApp Coding Co-pilot" plugin.
+3. Click Install to add it to your VS Code environment.
+
+GitHub Token Authentication
+
+The dApp co-pilot requires GitHub token authentication. Follow these steps to set it up:
+1. Go to your GitHub account settings.
+2. Click Generate new token, and select the appropriate scopes like repo, read:org, and user.
+3. Copy the generated token.
+4. In VS Code, open the dApp plugin settings and input the token when prompted.
+
+Login and Configuration
+Once the dApp plugin is installed:
+1. Open the Command Palette in VS Code (Ctrl+Shift+P or Cmd+Shift+P on macOS).
+2. Run the command: dApp: Login.
+3. Paste your GitHub token to authenticate.
+
+You can configure dApp for your projects through the VS Code settings panel, where you can set paths, toolchains, and customize how suggestions and completions work for Rust, Substrate, and Ink development.
+
+Main Features of the co-pilot
+
+Code Assistance
+The dApp co-pilot offers smart code suggestions, especially focused on Rust, Substrate, and Ink. Whether writing Substrate runtime modules or Ink smart contracts, dApp provides auto-completion, type checking, and in-line documentation.
+
+Code Snippets
+The co-pilot includes various pre-built code snippets, such as:
+- Smart Contracts in Ink: Quickly generate basic templatesx for creating Ink smart contracts.
+- Substrate Modules: Pre-defined Substrate module snippets to help kickstart runtime development.
+
+Debugging and Error Handling
+dApp includes integrated debugging support, making it easier to detect and resolve issues in Substrate modules and Ink smart contracts. It also highlights syntax errors, type mismatches, and suggests fixes in real-time.
+
+Using the dApp Co-pilot in Projects
+
+Starting a New Project
+To begin a new Substrate or Ink project with dApp:
+1. Use the dApp: Create New Project command in the Command Palette.
+2. Select whether you want to create a Substrate runtime or an Ink smart contract.
+3. Follow the setup prompts, and the co-pilot will scaffold the necessary files.
+
+Integrating with Existing Projects
+To integrate dApp into an existing project:
+1. Open your project folder in VS Code.
+2. The dApp co-pilot will automatically detect the project's framework (Rust, Substrate, Ink) and enable its features.
+3. Use the dApp: Analyze Project command to check for any missing configurations.
+
+Key Commands
+Some key VS Code commands enabled by the dApp co-pilot:
+- dApp: Generate Smart Contract: Automatically generate a basic Ink smart contract.
+- dApp: Build and Compile: Compile your Substrate or Ink project using optimized build settings.
+- dApp: Run Unit Tests: Quickly run unit tests for your Rust-based projects.
+
+Best Practices for Rust/Substrate/Ink Documentation
+
+Commenting in Code
+To ensure maintainability and clarity, follow these best practices for documenting Rust code:
+- Use Rust's built-in documentation comments (///) to explain functions, structs, and modules.
+- Clearly describe each function’s parameters, return values, and potential error cases.
+- For Substrate runtime modules, document each extrinsic and pallet with examples of how they should be used.
+
+Structuring Documentation
+For larger projects, structure your documentation files like so:
+- Overview: High-level description of the project and its purpose.
+- Installation: Detailed steps to set up the project.
+- Usage: Instructions on running the project, along with examples.
+- Development: Guidelines for contributing to the project, including style guides and coding standards.
+
+Using RustDoc
+RustDoc is an excellent tool for generating API documentation. Encourage developers to:
+- Use cargo doc to generate HTML documentation for the project.
+- Ensure every public function, module, and struct is documented to improve readability.
+
+Additional Guides for the LLM
+To assist the LLM in generating accurate documentation:
+1. Documenting Functions/Modules: Ensure the LLM writes detailed descriptions of function inputs, outputs, and use cases.
+2. Code Example Annotations: Provide step-by-step annotations for code examples.
+3. Version Control: Instruct the LLM to document version changes and maintain a changelog for important updates.
+4. Linking to External Resources: When appropriate, link to official Rust/Ink/Substrate documentation for more in-depth explanations.

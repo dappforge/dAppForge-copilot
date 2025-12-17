@@ -80,18 +80,7 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
-    if langfuse_handlers:
-        # Set the callback manager in Settings
-        Settings.callback_manager = langfuse_handlers['callback_manager']
-        logger.info("Langfuse handlers initialized successfully")
-        try:
-            # Attach callback manager to the Bedrock LLM instance used by KG RAG
-            from knowledge_graph_core.kg_rag.kg_config import bedrock_llm as _bedrock_llm
-            _bedrock_llm.callback_manager = Settings.callback_manager
-            logger.info("Attached Langfuse callback manager to Bedrock LLM")
-            logger.info(f"Bedrock LLM model: {getattr(_bedrock_llm, 'model', 'unknown')}")
-        except Exception as e:
-            logger.error(f"Failed to attach callback manager to Bedrock LLM: {e}")
+    # Note: Langfuse tracing is done manually via log_generation_usage() to ensure clean, named traces
     # Preload Memgraph drivers and query engines for all configured KGs
     try:
         if isinstance(MEMGRAPH_CONFIGS, dict):
@@ -172,7 +161,13 @@ async def chat_code(request: ChatRequest, username: str = Depends(authenticate))
                 kg_name=request.kg_name,
                 session_id=session_id
             ),
-            media_type="text/event-stream"
+            media_type="text/plain; charset=utf-8",
+            headers={
+                "Cache-Control": "no-cache, no-transform",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+                "Content-Encoding": "identity",
+            }
         )
     except Exception as e:
         logger.error(f"Error in chat_code endpoint: {str(e)}")

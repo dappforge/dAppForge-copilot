@@ -1,0 +1,13 @@
+[Unit]
+Description=Tabby Service
+After=network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/home/ubuntu
+ExecStart=docker run --entrypoint /opt/tabby/bin/tabby-cpu -p 8080:8080 -v /home/ubuntu/.tabby:/data tabbyml/tabby serve --model TabbyML/DeepseekCoder-6.7B
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
